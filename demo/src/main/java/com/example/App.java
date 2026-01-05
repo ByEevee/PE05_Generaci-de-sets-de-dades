@@ -1,26 +1,23 @@
 package com.example;
 
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Scanner;
-
+import java.util.List;
+import java.util.Arrays;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 
 public class App {
+
     static Scanner sc = new Scanner(System.in);
+
     public static void main(String[] args) {
-        // Opció 1: deixar que el client llegeixi la clau de GEMINI_API_KEY / GOOGLE_API_KEY
-        // Client client = new Client();
+
+        String apiKey = System.getenv("GEMINI_API_KEY");
+        if (apiKey == null || apiKey.isEmpty()) return;
+
+        Client client = Client.builder().apiKey(apiKey).build();
         boolean exit = false;
-        // Opció 2: passar explícitament l'API key (també la llegeixo de l'entorn)
-        String apiKey = System.getenv("GEMINI_API_KEY");// Reemplaça-ho amb la teva clau d'API real
-        if (apiKey == null || apiKey.isEmpty()) {
-            System.err.println("Error: falta la variable d'entorn GEMINI_API_KEY");
-            System.err.println("Si us plau, exporta GEMINI_API_KEY amb la teva API key de Gemini.");
-            return;
-        }
+
         do {
             System.out.println("------------------------------");
             System.out.println(" Generador de Sets de Dades");
@@ -35,43 +32,49 @@ public class App {
 
             switch (entrada) {
                 case "1":
-                    // Generar sets
+                    System.out.print("Nombre d'elements: ");
+                    int n = Integer.parseInt(sc.nextLine());
+                    System.out.print("Descripció del set: ");
+                    String desc = sc.nextLine();
+
+                    String prompt = "Genera una llista de 20 noms de animals mamífers que siguin nocturns."
+                            + n
+                            + " elements segons aquesta descripció: "
+                            + desc
+                            + ". Retorna només la llista.";
+
+                    try {
+                        GenerateContentResponse response =
+                                client.models.generateContent("gemini-2.5-flash", prompt, null);
+
+                        List<String> list = Arrays.asList(
+                                response.text()
+                                        .replace("[", "")
+                                        .replace("]", "")
+                                        .replace("\"", "")
+                                        .split(",")
+                        );
+
+                        System.out.println("=== Set generat ===");
+                        System.out.println(list);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "2":
-                    // Visualitzar sets
-                    break;
-
                 case "3":
-                    // Esborrar sets
+                    System.out.println("Funcionalitat pendent...");
                     break;
 
                 case "4":
                     exit = true;
                     break;
-
                 default:
                     System.out.println("Opció incorrecta");
             }
+
         } while (!exit);
-
-        Client client = Client.builder()
-                .apiKey(apiKey)  // usem l'API key del Gemini Developer API
-                .build();
-
-        // Prompt a enviar al model
-        String prompt = "Donem un conjunt de dades que es puguin importar en format llista i que continguin mamifers.";
-
-        try {
-            // "gemini-2.5-flash" és un dels models recomanats per text :contentReference[oaicite:4]{index=4}
-            GenerateContentResponse response =
-                    client.models.generateContent("gemini-2.5-flash", prompt, null);
-
-            System.out.println("=== Resposta de Gemini ===");
-            System.out.println(response.text());
-        } catch (Exception e) {
-            System.err.println("S'ha produït un error cridant a Gemini:");
-            e.printStackTrace();
-        }
     }
 }
